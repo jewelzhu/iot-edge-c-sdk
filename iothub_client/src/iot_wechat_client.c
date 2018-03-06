@@ -22,50 +22,120 @@
 #include <azure_c_shared_utility/xlogging.h>
 #include <azure_c_shared_utility/threadapi.h>
 #include <stdlib.h>
+#include <iothub_mqtt_client.h>
+#include <azure_c_shared_utility/utf8_checker.h>
 
 typedef struct IOT_WECHAT_CLIENT_TAG
 {
     IOTDM_CLIENT_HANDLE iotdm_client_handle;
     void(* audioPlayerCallback)(const char *);
+    IOTHUB_MQTT_CLIENT_HANDLE iothub_mqtt_client_handle;
 } IOT_WECHAT_CLIENT;
 
 static void HandleUpdateSnapshot(const SHADOW_MESSAGE_CONTEXT* messageContext, const SHADOW_SNAPSHOT* snapshot, void* callbackContext);
 
-IOT_WECHAT_CLIENT_HANDLE iot_wechat_client_init(char* address, char* device, void audioPlayCallback(const char*)) {
+
+static void on_recv_callback(MQTT_MESSAGE_HANDLE msgHandle, void* context)
+{
+    const APP_PAYLOAD* appMsg = mqttmessage_getApplicationMsg(msgHandle);
+    IOTHUB_MQTT_CLIENT_HANDLE clientHandle = (IOTHUB_MQTT_CLIENT_HANDLE)context;
+
+    LogInfo("Incoming Msg: Packet Id: %d\r\nTopic Name: %s\r\nIs Retained: %s\r\nIs Duplicate: %s\r\nApp Msg: ", mqttmessage_getPacketId(msgHandle),
+                 mqttmessage_getTopicName(msgHandle),
+                 mqttmessage_getIsRetained(msgHandle) ? "true" : "fale",
+                 mqttmessage_getIsDuplicateMsg(msgHandle) ? "true" : "fale"
+    );
+
+    // when receive message is "stop", call destroy method to exit
+    // trigger stop by send a message to topic "msgA" and payload with "stop"
+    if (strcmp((const char *)appMsg->message, "stop") == 0)
+    {
+        LogInfo("disconnect");
+        iothub_mqtt_disconnect(clientHandle);
+    }
+}
+
+
+IOT_WECHAT_CLIENT_HANDLE iot_wechat_client_init(char* subAddress, char* subUsername, char* subPassword,
+                                                void audioPlayCallback(const char*), char* pubAddress, char* pubUsername,
+                                                char* pubPassword, char* deviceId) {
     IOT_WECHAT_CLIENT_HANDLE handle = malloc(sizeof(IOT_WECHAT_CLIENT));
 
-    IOTDM_CLIENT_HANDLE dmHandle = iotdm_client_init(address, device);
+    IOTDM_CLIENT_HANDLE dmHandle = iotdm_client_init(subAddress, deviceId);
     if (NULL == dmHandle)
     {
         LogError("iotdm_client_init failed");
         return NULL;
     }
-    handle->iotdm_client_handle = dmHandle;
-    handle->audioPlayerCallback = audioPlayCallback;
+    iotdm_client_register_update_snapshot(dmHandle, HandleUpdateSnapshot, handle);
 
-    return handle;
-}
+    IOTDM_CLIENT_OPTIONS dmOptions;
+    dmOptions.cleanSession = true;
+    dmOptions.clientId = deviceId;
+    dmOptions.username = subUsername;
+    dmOptions.password = subPassword;
+    dmOptions.keepAliveInterval = 5;
+    dmOptions.retryTimeoutInSeconds = 300;
 
-int iot_wechat_client_subscribe(const IOT_WECHAT_CLIENT_HANDLE handle, char* device, char* username, char* password) {
-    iotdm_client_register_update_snapshot(handle->iotdm_client_handle, HandleUpdateSnapshot, handle);
-
-    IOTDM_CLIENT_OPTIONS options;
-    options.cleanSession = true;
-    options.clientId = device;
-    options.username = username;
-    options.password = password;
-    options.keepAliveInterval = 5;
-    options.retryTimeoutInSeconds = 300;
-
-    if (0 != iotdm_client_connect(handle->iotdm_client_handle, &options))
+    if (0 != iotdm_client_connect(dmHandle, &dmOptions))
     {
-        iotdm_client_deinit(handle->iotdm_client_handle);
+        iotdm_client_deinit(dmHandle);
         LogError("iotdm_client_connect failed");
-        return __FAILURE__;
+        return NULL;
     }
 
     LogInfo("iotdm client connect success");
+    handle->iotdm_client_handle = dmHandle;
+    handle->audioPlayerCallback = audioPlayCallback;
 
+
+    MQTT_CLIENT_OPTIONS options = { 0 };
+    options.clientId = deviceId;
+    options.willMessage = NULL;
+    options.willTopic = NULL;
+    options.username = pubUsername;
+    options.password = pubPassword;
+    options.keepAliveInterval = 10;
+    options.useCleanSession = true;
+    options.qualityOfServiceValue = DELIVER_AT_MOST_ONCE;
+
+    MQTT_CONNECTION_TYPE type = MQTT_CONNECTION_TLS;
+
+    IOTHUB_CLIENT_RETRY_POLICY retryPolicy = IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF;
+
+    size_t retryTimeoutLimitInSeconds = 1000;
+    IOTHUB_MQTT_CLIENT_HANDLE clientHandle = initialize_mqtt_client_handle(&options, pubAddress, type, on_recv_callback,
+                                                                           retryPolicy, retryTimeoutLimitInSeconds);
+    if (clientHandle == NULL)
+    {
+        LogError("Error: fail to initialize IOTHUB_MQTT_CLIENT_HANDLE");
+        return NULL;
+    }
+
+    int result = iothub_mqtt_doconnect(clientHandle, 60);
+
+    if (result == __FAILURE__)
+    {
+        LogError("fail to establish connection with server");
+        return NULL;
+    }
+
+    handle->iothub_mqtt_client_handle = clientHandle;
+    return handle;
+}
+
+int iot_wechat_client_pub_voice(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubTopic, const unsigned char* publishData, size_t publishDataSize) {
+    int result = publish_mqtt_message(handle->iothub_mqtt_client_handle, pubTopic, DELIVER_AT_LEAST_ONCE, publishData,
+                                  publishDataSize, NULL, NULL);
+
+    if (result == __FAILURE__) {
+        LogError("pub data to mqtt fail");
+    }
+
+    return result;
+}
+
+int iot_wechat_client_subscribe(const IOT_WECHAT_CLIENT_HANDLE handle) {
     while (iotdm_client_dowork(handle->iotdm_client_handle) >= 0)
     {
         ThreadAPI_Sleep(100);
@@ -75,6 +145,9 @@ int iot_wechat_client_subscribe(const IOT_WECHAT_CLIENT_HANDLE handle, char* dev
 
 void iot_wechat_client_deinit(IOT_WECHAT_CLIENT_HANDLE handle) {
     iotdm_client_deinit(handle->iotdm_client_handle);
+    iothub_mqtt_disconnect(handle->iothub_mqtt_client_handle);
+    iothub_mqtt_destroy(handle->iothub_mqtt_client_handle);
+    free(handle);
 }
 
 static void HandleUpdateSnapshot(const SHADOW_MESSAGE_CONTEXT* messageContext, const SHADOW_SNAPSHOT* snapshot, void* callbackContext)
