@@ -19,6 +19,7 @@
 
 
 #include <iot_wechat_client.h>
+#include <azure_c_shared_utility/platform.h>
 #include "../../../serializer/inc/serializer.h"
 
 // Prerequisite: your device should have string attribute audioUrl
@@ -46,11 +47,27 @@ static void playAudioByUrl(const char* url) {
 }
 
 int iot_wechat_client_run() {
+    if (0 != platform_init())
+    {
+        LogError("platform_init failed");
+        return __FAILURE__;
+    }
+
+    if (SERIALIZER_OK != serializer_init(NULL))
+    {
+        LogError("serializer_init failed");
+        return __FAILURE__;
+    }
+
     IOT_WECHAT_CLIENT_HANDLE handler = iot_wechat_client_init(ADDRESS, DEVICE, &playAudioByUrl);
 
     iot_wechat_client_subscribe(handler, DEVICE, USERNAME, PASSWORD);
 
     iot_wechat_client_deinit(handler);
+
+    serializer_deinit();
+    platform_deinit();
+
     return 0;
 }
 
