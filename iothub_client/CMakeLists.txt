@@ -27,6 +27,7 @@ compileAsC99()
 option(sqlite_persistence "set sqlite_persistence to ON which enable use sqlite as persistent storage. Default is OFF" OFF)
 option(device_management "set iotdm_client to OFF to skip building for iot device mangement client. Default is ON" ON)
 option(bos "set bos to OFF to skip building for bos client. Default is ON" ON)
+option(iot_wechat "set iot_wechat to OFF to skip building for iot wechat client. Default is ON" ON)
 
 include_directories(../certs)
 
@@ -63,6 +64,12 @@ if (${bos})
     include_directories(../parson)
     set(iothub_client_c_files ${iothub_client_c_files} ../parson/parson.c ./src/bos.c ./src/http_signer.c)
     set(iothub_client_h_files ${iothub_client_h_files} ../parson/parson.h ./inc/bos.h ./inc/http_signer.h)
+endif()
+
+if (${iot_wechat})
+    include_directories(../parson)
+    set(iothub_client_c_files ${iothub_client_c_files} ../parson/parson.c ./src/iotdm_client.c ./src/iot_wechat_client.c)
+    set(iothub_client_h_files ${iothub_client_h_files} ../parson/parson.h ./inc/iotdm_client.h ./inc/iotdm_callback.h ./inc/iot_wechat_client.h)
 endif()
 
 include_directories(${AZURE_C_SHARED_UTILITY_INCLUDES})
