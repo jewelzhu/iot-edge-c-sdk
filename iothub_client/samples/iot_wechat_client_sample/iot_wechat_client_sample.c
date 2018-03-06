@@ -29,17 +29,30 @@
 // The endpoint address your device should cnnect, which is like
 // 1. "tcp://xxxxxx.mqtt.iot.xx.baidubce.com:1883" or
 // 2. "ssl://xxxxxx.mqtt.iot.xx.baidubce.com:1884"
-#define         ADDRESS             "tcp://e6e0474a54554682a1ad7711f2d1dad6.mqtt.iot.bj.baidubce.com:1883"
+#define         SUB_ADDRESS             "tcp://e6e0474a54554682a1ad7711f2d1dad6.mqtt.iot.bj.baidubce.com:1883"
 
 // The device name you created in device management service.
 #define         DEVICE              "a_sample_device"
 
 // The username you can find on the device connection configuration web,
 // and the format is like "xxxxxx/xxxxx"
-#define         USERNAME            "e6e0474a54554682a1ad7711f2d1dad6/a_sample_device"
+#define         SUB_USERNAME            "e6e0474a54554682a1ad7711f2d1dad6/a_sample_device"
 
 // The key (password) you can find on the device connection configuration web.
-#define         PASSWORD            "nWTZZUMP4qqDy38c1E96uJGy3ScjLygKrCQJHCxsjZ4="
+#define         SUB_PASSWORD            "nWTZZUMP4qqDy38c1E96uJGy3ScjLygKrCQJHCxsjZ4="
+
+
+// upload mqtt endpoint
+// The endpoint address, witch is like "xxxxxx.mqtt.iot.xx.baidubce.com".
+#define         PUB_ADDRESS                    "iot-wechat-demo.mqtt.iot.bj.baidubce.com"
+
+// The mqtt client username, and the format is like "xxxxxx/xxxx".
+#define         PUB_USERNAME                    "iot-wechat-demo/iot-wechat-device"
+
+// The key (password) of mqtt client.
+#define         PUB_PASSWORD                    "+biL5YtVCEPpZAhWfNCBwAaa8KZDc3u8TIm7I59dhok="
+
+#define         PUB_TOPIC_NAME                  "iot-wechat-demo-topic1"
 
 static void playAudioByUrl(const char* url) {
     LogInfo("Please implement playing audio url here:");
@@ -59,9 +72,42 @@ int iot_wechat_client_run() {
         return __FAILURE__;
     }
 
-    IOT_WECHAT_CLIENT_HANDLE handler = iot_wechat_client_init(ADDRESS, DEVICE, &playAudioByUrl);
+    LogInfo("init iot wechat client start");
 
-    iot_wechat_client_subscribe(handler, DEVICE, USERNAME, PASSWORD);
+    IOT_WECHAT_CLIENT_HANDLE handler = iot_wechat_client_init(SUB_ADDRESS, SUB_USERNAME, SUB_PASSWORD, &playAudioByUrl, PUB_ADDRESS, PUB_USERNAME, PUB_PASSWORD, DEVICE);
+
+    if (handler == NULL) {
+        LogError("init client fail");
+        return __FAILURE__;
+    }
+    LogInfo("init iot wechat client success");
+
+    // read voice message from file and pub to mqtt
+    FILE *fileptr = fopen("/Users/zhuzhu01/1519658635867.bytes", "rb");  // Open the file in binary mode
+    fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
+    long filelen = ftell(fileptr);             // Get the current byte offset in the file
+    rewind(fileptr);                      // Jump back to the beginning of the file
+    unsigned char* audio = (unsigned char *)malloc((filelen+1)*sizeof(char)); // Enough memory for file + \0
+    fread(audio, (size_t) filelen, 1, fileptr); // Read in the entire file
+    fclose(fileptr); // Close the file
+
+    int result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, audio, (size_t) filelen);
+
+    if (result != 0) {
+        LogError("pub message1 to mqtt fail");
+        return __FAILURE__;
+    }
+
+    result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, (unsigned char *)"hello from end", strlen("hello from end"));
+
+    if (result != 0) {
+        LogError("pub message2 to mqtt fail");
+        return __FAILURE__;
+    }
+
+    LogInfo("publish message to mqtt success");
+    // subscribe should run in a dedicated thread
+    iot_wechat_client_subscribe(handler);
 
     iot_wechat_client_deinit(handler);
 
