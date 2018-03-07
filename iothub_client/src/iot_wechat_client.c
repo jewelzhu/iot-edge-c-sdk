@@ -24,13 +24,23 @@
 #include <stdlib.h>
 #include <iothub_mqtt_client.h>
 #include <azure_c_shared_utility/utf8_checker.h>
+#include <mach/boolean.h>
+#include <azure_c_shared_utility/buffer_.h>
 
 typedef struct IOT_WECHAT_CLIENT_TAG
 {
     IOTDM_CLIENT_HANDLE iotdm_client_handle;
     void(* audioPlayerCallback)(const char *);
     IOTHUB_MQTT_CLIENT_HANDLE iothub_mqtt_client_handle;
+    char* deviceId;
 } IOT_WECHAT_CLIENT;
+
+#define MESSAGE_ID_TAG  "msgId"
+#define SEQ_TAG "seq"
+#define IS_FINISH_TAG "isEnd"
+#define DEVICE_ID_TAG "devId"
+#define BOUNDARY "\r\n--\r\n"
+#define MQTT_MSG_BODY_LIMIT_IN_BYTES 32000
 
 static void HandleUpdateSnapshot(const SHADOW_MESSAGE_CONTEXT* messageContext, const SHADOW_SNAPSHOT* snapshot, void* callbackContext);
 
@@ -121,16 +131,59 @@ IOT_WECHAT_CLIENT_HANDLE iot_wechat_client_init(char* subAddress, char* subUsern
     }
 
     handle->iothub_mqtt_client_handle = clientHandle;
+    handle->deviceId = deviceId;
     return handle;
 }
 
-int iot_wechat_client_pub_voice(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubTopic, const unsigned char* publishData, size_t publishDataSize) {
+// publishDataSize must <= 32000
+int iot_wechat_client_pub_data(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubTopic, const unsigned char* publishData, size_t publishDataSize) {
+    if (publishDataSize > MQTT_MSG_BODY_LIMIT_IN_BYTES) {
+        LogError("size of a mqtt msg cannot exceed 32K");
+        return __FAILURE__;
+    }
     int result = publish_mqtt_message(handle->iothub_mqtt_client_handle, pubTopic, DELIVER_AT_LEAST_ONCE, publishData,
                                   publishDataSize, NULL, NULL);
 
     if (result == __FAILURE__) {
         LogError("pub data to mqtt fail");
     }
+
+    return result;
+}
+
+int iot_wechat_client_pub_voice(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubTopic, const unsigned char* voiceData, size_t voidDataSzie, char * messageId, int seq, int finish) {
+    BUFFER_HANDLE buffer =  BUFFER_new();
+    if (buffer == NULL) {
+        LogError("create buffer fail");
+        return __FAILURE__;
+    }
+    JSON_Value* json = json_value_init_object();
+    JSON_Object* root = json_object(json);
+    json_object_set_string(root, MESSAGE_ID_TAG, messageId);
+    json_object_set_number(root, SEQ_TAG, seq);
+    json_object_set_number(root, IS_FINISH_TAG, finish);
+    json_object_set_string(root, DEVICE_ID_TAG, handle->deviceId);
+    char* encodedJson = json_serialize_to_string(json);
+    int result;
+    if (BUFFER_append_build(buffer, (const unsigned char*)encodedJson, strlen(encodedJson)) != 0) {
+        LogError("oom");
+        result = __FAILURE__;
+    }
+    else if (BUFFER_append_build(buffer, (const unsigned char*)BOUNDARY, strlen(BOUNDARY)) != 0) {
+        LogError("oom");
+        result = __FAILURE__;
+    }
+    else if (BUFFER_append_build(buffer, voiceData, voidDataSzie) != 0) {
+        LogError("oom");
+        result = __FAILURE__;
+    }
+    else {
+        result = iot_wechat_client_pub_data(handle, pubTopic, BUFFER_u_char(buffer), BUFFER_length(buffer));
+    }
+
+    json_object_clear(root);
+    free(encodedJson);
+    BUFFER_delete(buffer);
 
     return result;
 }

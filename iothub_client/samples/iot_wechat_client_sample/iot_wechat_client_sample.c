@@ -20,6 +20,7 @@
 
 #include <iot_wechat_client.h>
 #include <azure_c_shared_utility/platform.h>
+#include <azure_c_shared_utility/threadapi.h>
 #include "../../../serializer/inc/serializer.h"
 
 // Prerequisite: your device should have string attribute audioUrl
@@ -53,6 +54,8 @@
 #define         PUB_PASSWORD                    "+biL5YtVCEPpZAhWfNCBwAaa8KZDc3u8TIm7I59dhok="
 
 #define         PUB_TOPIC_NAME                  "iot-wechat-demo-topic1"
+
+#define         VOICE_PIECE_SIZE_IN_BYTES       10000
 
 static void playAudioByUrl(const char* url) {
     LogInfo("Please implement playing audio url here:");
@@ -91,21 +94,38 @@ int iot_wechat_client_run() {
     fread(audio, (size_t) filelen, 1, fileptr); // Read in the entire file
     fclose(fileptr); // Close the file
 
-    int result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, audio, (size_t) filelen);
+    int result;
+    // long voice message should pub in a sequence of mqtt messages
+    // each mqtt message's payload mustn't exceed 32K
+    int i = 0;
+    int seq = 0;
+    int finish = 0;
+    char* messageId = "MyRandomMessageId";
+    LogInfo("Voice length = %d", filelen);
+    while (finish == 0) {
+        int pieceLength = VOICE_PIECE_SIZE_IN_BYTES;
+        if (i + VOICE_PIECE_SIZE_IN_BYTES > filelen) {
+            finish = 1;
+            pieceLength = filelen - i;
+        }
+        result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, &audio[i], pieceLength, messageId, seq, 0);
+        if (result != 0) {
+            LogError("pub voice piece to mqtt fail");
+            return __FAILURE__;
+        }
+        i += VOICE_PIECE_SIZE_IN_BYTES;
+        seq++;
+        LogInfo("publish voice piece to mqtt success, voicePieceLength=%d, seq=%d, isFinish=%d", pieceLength, seq, finish);
+    }
+
+    // pub a raw mqtt message
+    result = iot_wechat_client_pub_data(handler, PUB_TOPIC_NAME, (unsigned char *)"hello from end", strlen("hello from end"));
 
     if (result != 0) {
-        LogError("pub message1 to mqtt fail");
+        LogError("pub text message to mqtt fail");
         return __FAILURE__;
     }
 
-    result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, (unsigned char *)"hello from end", strlen("hello from end"));
-
-    if (result != 0) {
-        LogError("pub message2 to mqtt fail");
-        return __FAILURE__;
-    }
-
-    LogInfo("publish message to mqtt success");
     // subscribe should run in a dedicated thread
     iot_wechat_client_subscribe(handler);
 
