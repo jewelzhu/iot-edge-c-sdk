@@ -108,7 +108,7 @@ int iot_wechat_client_run() {
             finish = 1;
             pieceLength = filelen - i;
         }
-        result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, &audio[i], pieceLength, messageId, seq, 0);
+        result = iot_wechat_client_pub_voice(handler, PUB_TOPIC_NAME, &audio[i], pieceLength, messageId, seq, finish);
         if (result != 0) {
             LogError("pub voice piece to mqtt fail");
             return __FAILURE__;
@@ -119,7 +119,7 @@ int iot_wechat_client_run() {
     }
 
     // pub a raw mqtt message
-    result = iot_wechat_client_pub_data(handler, PUB_TOPIC_NAME, (unsigned char *)"hello from end", strlen("hello from end"));
+    //result = iot_wechat_client_pub_data(handler, PUB_TOPIC_NAME, (unsigned char *)"hello from end", strlen("hello from end"));
 
     if (result != 0) {
         LogError("pub text message to mqtt fail");
