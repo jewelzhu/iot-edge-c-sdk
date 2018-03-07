@@ -37,6 +37,6 @@ MOCKABLE_FUNCTION(, IOT_WECHAT_CLIENT_HANDLE, iot_wechat_client_init, char*, sub
 MOCKABLE_FUNCTION(, int, iot_wechat_client_subscribe, IOT_WECHAT_CLIENT_HANDLE, handle);
 
 MOCKABLE_FUNCTION(, void, iot_wechat_client_deinit, IOT_WECHAT_CLIENT_HANDLE, handle);
-MOCKABLE_FUNCTION(, int, iot_wechat_client_pub_voice, const IOT_WECHAT_CLIENT_HANDLE, handle, char*, pubTopic, const unsigned char*, publishData, size_t, publishDataSize);
-
+MOCKABLE_FUNCTION(, int, iot_wechat_client_pub_voice, const IOT_WECHAT_CLIENT_HANDLE, handle, char*, pubTopic, const unsigned char*, voiceData, size_t, voidDataSzie, char *, messageId, int, seq, int, finish) ;
+MOCKABLE_FUNCTION(, int, iot_wechat_client_pub_data, const IOT_WECHAT_CLIENT_HANDLE, handle, char*, pubTopic, const unsigned char*, publishData, size_t, publishDataSize);
 #endif //IOT_WECHAT_CLIENT_H
