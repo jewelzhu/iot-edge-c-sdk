@@ -151,7 +151,8 @@ int iot_wechat_client_pub_data(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubT
     return result;
 }
 
-int iot_wechat_client_pub_voice(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubTopic, const unsigned char* voiceData, size_t voidDataSzie, char * messageId, int seq, int finish) {
+int iot_wechat_client_pub_voice(const IOT_WECHAT_CLIENT_HANDLE handle, char* pubTopic, const unsigned char* voiceData,
+                                size_t voidDataSzie, char * messageId, int seq, int finish) {
     BUFFER_HANDLE buffer =  BUFFER_new();
     if (buffer == NULL) {
         LogError("create buffer fail");
