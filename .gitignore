@@ -1,5 +1,6 @@
 # put all ignore file to here
-
+*.cmake
+*.o
 .idea
 cmake
 cmake-build-debug

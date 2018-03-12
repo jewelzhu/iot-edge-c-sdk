@@ -71,7 +71,7 @@ IOT_WECHAT_CLIENT_HANDLE iot_wechat_client_init(char* subAddress, char* subUsern
                                                 char* pubPassword, char* deviceId) {
     IOT_WECHAT_CLIENT_HANDLE handle = malloc(sizeof(IOT_WECHAT_CLIENT));
 
-    IOTDM_CLIENT_HANDLE dmHandle = iotdm_client_init(subAddress, deviceId);
+    IOTDM_CLIENT_HANDLE dmHandle = iotdm_client_init(subAddress, deviceId, false);
     if (NULL == dmHandle)
     {
         LogError("iotdm_client_init failed");

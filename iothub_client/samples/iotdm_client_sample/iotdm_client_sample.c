@@ -282,7 +282,7 @@ static void HandleDelta(const SHADOW_MESSAGE_CONTEXT* messageContext, const JSON
     Log(SPLIT);
 }
 
-int iotdm_client_run(void)
+int iotdm_client_run(bool isGatewayDevice)
 {
     Log("The device management edge simulator is starting ...");
     if (0 != platform_init())
@@ -297,7 +297,7 @@ int iotdm_client_run(void)
         return __FAILURE__;
     }
 
-    IOTDM_CLIENT_HANDLE handle = iotdm_client_init(ADDRESS, DEVICE);
+    IOTDM_CLIENT_HANDLE handle = iotdm_client_init(ADDRESS, DEVICE, isGatewayDevice);
     if (NULL == handle)
     {
         Log("iotdm_client_init failed");
