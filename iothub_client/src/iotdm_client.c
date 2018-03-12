@@ -199,6 +199,11 @@ static char* GetBrokerEndpoint(char* broker, MQTT_CONNECTION_TYPE* mqttConnType)
     return endpoint;
 }
 
+
+/**
+ * if topic is $prefix/$device/$suffix, return $device
+ * if topic is $prefix/$gateway/$device/$suffix, return $gateway/$device
+ */
 static char* GetDeviceFromTopic(const char* topic, SHADOW_CALLBACK_TYPE* type)
 {
     char* prefix = TOPIC_PREFIX;
@@ -209,59 +214,56 @@ static char* GetDeviceFromTopic(const char* topic, SHADOW_CALLBACK_TYPE* type)
         LogError("Failure: the topic prefix is illegal.");
         return NULL;
     }
+    size_t topicLength = StringLength(topic);
 
     size_t head = prefixLength;
-    size_t end = head;
-    for (size_t index = head; '\0' != topic[index]; ++index)
-    {
-        if (SLASH == topic[index])
-        {
-            end = index;
-            break;
-        }
-    }
-    if (end <= head)
-    {
-        LogError("Failure: the topic is illegal.");
-        return NULL;
-    }
+    size_t end, tmp;
 
     // TODO: support more topics for subscription handle.
-    if (StringCmp(TOPIC_SUFFIX_DELTA, topic, end + 1, StringLength(topic) + 1))
+    if (StringCmp(TOPIC_SUFFIX_DELTA, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELTA), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_DELTA;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_GET_ACCEPTED, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_GET_ACCEPTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_GET_ACCEPTED), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_GET_ACCEPTED;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_GET_REJECTED, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_GET_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_GET_REJECTED), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_GET_REJECTED;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_ACCETPED, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_ACCETPED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_ACCETPED), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_ACCEPTED;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_REJECTED, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_REJECTED), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_REJECTED;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_DOCUMENTS, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_DOCUMENTS, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_DOCUMENTS), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_DOCUMENTS;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_SNAPSHOT, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_SNAPSHOT, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_SNAPSHOT), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_SNAPSHOT;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_DELETE_ACCEPTED, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_DELETE_ACCEPTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELETE_ACCEPTED), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_DELETE_ACCEPTED;
+        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_DELETE_REJECTED, topic, end + 1, StringLength(topic) + 1))
+    else if (StringCmp(TOPIC_SUFFIX_DELETE_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELETE_REJECTED), topicLength + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_DELETE_REJECTED;
+        end = tmp - 1;
     }
     else
     {
