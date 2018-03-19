@@ -39,7 +39,7 @@
 // $endpointName/$puid
 #define         USERNAME            "e6e0474a54554682a1ad7711f2d1dad6/_baidu_sample_pump_instance"
 
-// put smarthome cert in cert.c rather and set PASSWORD to empty
+// put smarthome cert in cert.c and set this PASSWORD to empty after smarthome test environment is ready
 #define         PASSWORD            "hYOprWCa5EbEls4xRY/9L7/XmukTICcSzFed20CAhwY="
 
 static bool isGateway;
