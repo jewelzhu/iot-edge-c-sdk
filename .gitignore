@@ -1,4 +1,6 @@
 # put all ignore file to here
+CMakeFiles
+Makefile
 *.cmake
 *.o
 .idea

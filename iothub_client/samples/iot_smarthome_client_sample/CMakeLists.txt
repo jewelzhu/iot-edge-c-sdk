@@ -15,19 +15,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-#this is CMakeLists.txt for iotdm_client_sample
+#this is CMakeLists.txt for iot_smarthome_client_sample
 
-set(iotdm_client_sample_c_files
+set(iot_smarthome_client_sample_c_files
         iot_smarthome_client_sample.c)
 
 if(WIN32)
-    set(iotdm_client_sample_c_files ${iotdm_client_sample_c_files} windows/main.c)
+    set(iot_smarthome_client_sample_c_files ${iot_smarthome_client_sample_c_files} windows/main.c)
 else()
-    set(iotdm_client_sample_c_files ${iotdm_client_sample_c_files} linux/main.c)
+    set(iot_smarthome_client_sample_c_files ${iot_smarthome_client_sample_c_files} linux/main.c)
 endif()
 
-set(iotdm_client_sample_h_files
-        iotdm_client_sample.h
+set(iot_smarthome_client_sample_h_files
+        iot_smarthome_client_sample.h
         )
 
 IF(WIN32)
@@ -41,7 +41,7 @@ include_directories(${MQTT_INC_FOLDER})
 include_directories(${SERIALIZER_INC_FOLDER})
 include_directories(${IOTHUB_CLIENT_INC_FOLDER})
 
-add_executable(iotdm_client_sample ${iotdm_client_sample_c_files} ${iotdm_client_sample_h_files})
+add_executable(iot_smarthome_client_sample ${iot_smarthome_client_sample_c_files} ${iot_smarthome_client_sample_h_files})
 
 if (${sqlite_persistence})
     #this prepares the sqlite3 library
@@ -62,7 +62,7 @@ if (${sqlite_persistence})
 endif()
 
 if (WIN32)
-    target_link_libraries(iotdm_client_sample
+    target_link_libraries(iot_smarthome_client_sample
         serializer
         aziotsharedutil
         umqtt
@@ -71,19 +71,19 @@ if (WIN32)
         iothub_client)
 
     if (${sqlite_persistence})
-        target_link_libraries(iotdm_client_sample sqlite3)
+        target_link_libraries(iot_smarthome_client_sample sqlite3)
     endif()
 
     if(${use_openssl})
-        target_link_libraries(iotdm_client_sample $ENV{OpenSSLDir}/lib/ssleay32.lib $ENV{OpenSSLDir}/lib/libeay32.lib)
+        target_link_libraries(iot_smarthome_client_sample $ENV{OpenSSLDir}/lib/ssleay32.lib $ENV{OpenSSLDir}/lib/libeay32.lib)
         file(COPY $ENV{OpenSSLDir}/bin/libeay32.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Debug)
         file(COPY $ENV{OpenSSLDir}/bin/ssleay32.dll DESTINATION ${CMAKE_CURRENT_BINARY_DIR}/Debug)
     endif()
     if(${use_wolfssl})
-        target_link_libraries(iotdm_client_sample $ENV{WolfSSLDir}/Debug/wolfssl.lib)
+        target_link_libraries(iot_smarthome_client_sample $ENV{WolfSSLDir}/Debug/wolfssl.lib)
     endif()
 elseif(QNX)
-    target_link_libraries(iotdm_client_sample
+    target_link_libraries(iot_smarthome_client_sample
         serializer
         aziotsharedutil
         iothub_client
@@ -91,10 +91,10 @@ elseif(QNX)
         m
         umqtt)
     #if(${use_openssl})
-        target_link_libraries(iotdm_client_sample ${OPENSSL_LIBRARIES})
+        target_link_libraries(iot_smarthome_client_sample ${OPENSSL_LIBRARIES})
     #endif()
 else()
-    target_link_libraries(iotdm_client_sample
+    target_link_libraries(iot_smarthome_client_sample
         serializer
         aziotsharedutil
         pthread
@@ -102,10 +102,10 @@ else()
         umqtt)
 
     if (${sqlite_persistence})
-        target_link_libraries(iotdm_client_sample sqlite3)
+        target_link_libraries(iot_smarthome_client_sample sqlite3)
     endif()
     #if(${use_openssl})
-        target_link_libraries(iotdm_client_sample ${OPENSSL_LIBRARIES})
+        target_link_libraries(iot_smarthome_client_sample ${OPENSSL_LIBRARIES})
     #endif()
 endif()
 
