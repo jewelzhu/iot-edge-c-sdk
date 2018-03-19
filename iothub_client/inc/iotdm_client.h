@@ -51,7 +51,7 @@ typedef struct IOTDM_CLIENT_OPTIONS_TAG
 
 } IOTDM_CLIENT_OPTIONS; 
 
-MOCKABLE_FUNCTION(, IOTDM_CLIENT_HANDLE, iotdm_client_init, char*, broker, char*, name, bool, isGatewayDevice);
+MOCKABLE_FUNCTION(, IOTDM_CLIENT_HANDLE, iotdm_client_init, char*, broker, char*, name);
 MOCKABLE_FUNCTION(, void, iotdm_client_deinit, IOTDM_CLIENT_HANDLE, handle);
 
 MOCKABLE_FUNCTION(, int, iotdm_client_connect, IOTDM_CLIENT_HANDLE, handle, const IOTDM_CLIENT_OPTIONS*, options);

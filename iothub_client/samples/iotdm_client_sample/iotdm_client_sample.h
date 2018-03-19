@@ -24,7 +24,7 @@
 extern "C" {
 #endif
 
-int iotdm_client_run(bool isGatewayDevice);
+int iotdm_client_run(void);
 
 #ifdef __cplusplus
 }

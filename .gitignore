@@ -1,11 +1,15 @@
 # put all ignore file to here
 <<<<<<< HEAD
+<<<<<<< HEAD
 CMakeFiles
 Makefile
 =======
 >>>>>>> 1e506656ab524f7fc46a61f8855cff7cae446348
 *.cmake
 *.o
+=======
+
+>>>>>>> parent of d08840f... subscribe wildcard topic of gateway device
 .idea
 cmake
 cmake-build-debug

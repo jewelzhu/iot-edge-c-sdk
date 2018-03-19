@@ -17,12 +17,10 @@
 * limitations under the License.
 */
 
-#include <stdbool.h>
 #include "iotdm_client_sample.h"
 
 int main(void)
 {
-    bool isGatewayDevice = false;
-    iotdm_client_run(isGatewayDevice);
+    iotdm_client_run();
     return 0;
 }

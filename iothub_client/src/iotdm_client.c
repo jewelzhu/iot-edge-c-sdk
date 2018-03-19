@@ -50,7 +50,6 @@
 #define     SUB_UPDATE_SNAPSHOT             "$baidu/iot/shadow/%s/update/snapshot"
 #define     SUB_DELETE_ACCEPTED             "$baidu/iot/shadow/%s/delete/accepted"
 #define     SUB_DELETE_REJECTED             "$baidu/iot/shadow/%s/delete/rejected"
-#define     SUB_GATEWAY_WILDCARD            "$baidu/iot/shadow/%s/#"
 
 #define     KEY_CODE                        "code"
 #define     KEY_DESIRED                     "desired"
@@ -97,13 +96,12 @@ typedef struct IOTDM_CLIENT_TAG
     MQTT_CONNECTION_TYPE mqttConnType;
     SHADOW_CALLBACK callback;
     SHADOW_CALLBACK_CONTEXT context;
-    bool isGateway;
 } IOTDM_CLIENT;
 
 static size_t StringLength(const char* string)
 {
     if (NULL == string) return 0;
-    
+
     size_t index = 0;
     while ('\0' != string[index++]) {}
 
@@ -201,11 +199,6 @@ static char* GetBrokerEndpoint(char* broker, MQTT_CONNECTION_TYPE* mqttConnType)
     return endpoint;
 }
 
-
-/**
- * if topic is $prefix/$device/$suffix, return $device
- * if topic is $prefix/$gateway/$device/$suffix, return $gateway/$device
- */
 static char* GetDeviceFromTopic(const char* topic, SHADOW_CALLBACK_TYPE* type)
 {
     char* prefix = TOPIC_PREFIX;
@@ -216,56 +209,59 @@ static char* GetDeviceFromTopic(const char* topic, SHADOW_CALLBACK_TYPE* type)
         LogError("Failure: the topic prefix is illegal.");
         return NULL;
     }
-    size_t topicLength = StringLength(topic);
 
     size_t head = prefixLength;
-    size_t end, tmp;
+    size_t end = head;
+    for (size_t index = head; '\0' != topic[index]; ++index)
+    {
+        if (SLASH == topic[index])
+        {
+            end = index;
+            break;
+        }
+    }
+    if (end <= head)
+    {
+        LogError("Failure: the topic is illegal.");
+        return NULL;
+    }
 
     // TODO: support more topics for subscription handle.
-    if (StringCmp(TOPIC_SUFFIX_DELTA, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELTA), topicLength + 1))
+    if (StringCmp(TOPIC_SUFFIX_DELTA, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_DELTA;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_GET_ACCEPTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_GET_ACCEPTED), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_GET_ACCEPTED, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_GET_ACCEPTED;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_GET_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_GET_REJECTED), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_GET_REJECTED, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_GET_REJECTED;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_ACCETPED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_ACCETPED), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_ACCETPED, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_ACCEPTED;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_REJECTED), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_REJECTED, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_REJECTED;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_DOCUMENTS, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_DOCUMENTS), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_DOCUMENTS, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_DOCUMENTS;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_UPDATE_SNAPSHOT, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_UPDATE_SNAPSHOT), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_UPDATE_SNAPSHOT, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_UPDATE_SNAPSHOT;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_DELETE_ACCEPTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELETE_ACCEPTED), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_DELETE_ACCEPTED, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_DELETE_ACCEPTED;
-        end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_DELETE_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELETE_REJECTED), topicLength + 1))
+    else if (StringCmp(TOPIC_SUFFIX_DELETE_REJECTED, topic, end + 1, StringLength(topic) + 1))
     {
         *type = SHADOW_CALLBACK_TYPE_DELETE_REJECTED;
-        end = tmp - 1;
     }
     else
     {
@@ -307,93 +303,98 @@ static void ReleaseSubscription(char** subscribe, size_t length)
     }
 }
 
-
 static int GetSubscription(IOTDM_CLIENT_HANDLE handle, char** subscribe, size_t length)
 {
     if (NULL == subscribe) return 0;
 
     size_t index = 0;
     ResetSubscription(subscribe, length);
-
-    if (handle->isGateway == false) {
-        if (NULL != handle->callback.delta) {
-            subscribe[index] = GenerateTopic(SUB_DELTA, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'delta'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.getAccepted) {
-            subscribe[index] = GenerateTopic(SUB_GET_ACCEPTED, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'get/accepted'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.getRejected) {
-            subscribe[index] = GenerateTopic(SUB_GET_REJECTED, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'get/rejected'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.updateAccepted) {
-            subscribe[index] = GenerateTopic(SUB_UPDATE_ACCEPTED, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'update/accepted'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.updateRejected) {
-            subscribe[index] = GenerateTopic(SUB_UPDATE_REJECTED, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'update/rejected'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.updateDocuments) {
-            subscribe[index] = GenerateTopic(SUB_UPDATE_DOCUMENTS, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'update/documents'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.updateSnapshot) {
-            subscribe[index] = GenerateTopic(SUB_UPDATE_SNAPSHOT, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'update/snapshot'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.deleteAccepted) {
-            subscribe[index] = GenerateTopic(SUB_DELETE_ACCEPTED, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'delete/accepted'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
-        }
-        if (NULL != handle->callback.deleteRejected) {
-            subscribe[index] = GenerateTopic(SUB_DELETE_REJECTED, handle->name);
-            if (NULL == subscribe[index++]) {
-                LogError("Failure: failed to generate the sub topic 'delete/rejected'.");
-                ReleaseSubscription(subscribe, length);
-                return -1;
-            }
+    if (NULL != handle->callback.delta)
+    {
+        subscribe[index] = GenerateTopic(SUB_DELTA, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'delta'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
         }
     }
-    else {
-        // for gateway device, subscribe $prefix/$gatewayId/#
-        subscribe[index] = GenerateTopic(SUB_GATEWAY_WILDCARD, handle->name);
-        if (NULL == subscribe[index++]) {
-            LogError("Failure: failed to generate the sub topic 'gatewayId/#'.");
+    if (NULL != handle->callback.getAccepted)
+    {
+        subscribe[index] = GenerateTopic(SUB_GET_ACCEPTED, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'get/accepted'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.getRejected)
+    {
+        subscribe[index] = GenerateTopic(SUB_GET_REJECTED, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'get/rejected'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.updateAccepted)
+    {
+        subscribe[index] = GenerateTopic(SUB_UPDATE_ACCEPTED, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'update/accepted'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.updateRejected)
+    {
+        subscribe[index] = GenerateTopic(SUB_UPDATE_REJECTED, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'update/rejected'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.updateDocuments)
+    {
+        subscribe[index] = GenerateTopic(SUB_UPDATE_DOCUMENTS, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'update/documents'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.updateSnapshot)
+    {
+        subscribe[index] = GenerateTopic(SUB_UPDATE_SNAPSHOT, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'update/snapshot'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.deleteAccepted)
+    {
+        subscribe[index] = GenerateTopic(SUB_DELETE_ACCEPTED, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'delete/accepted'.");
+            ReleaseSubscription(subscribe, length);
+            return -1;
+        }
+    }
+    if (NULL != handle->callback.deleteRejected)
+    {
+        subscribe[index] = GenerateTopic(SUB_DELETE_REJECTED, handle->name);
+        if (NULL == subscribe[index++])
+        {
+            LogError("Failure: failed to generate the sub topic 'delete/rejected'.");
             ReleaseSubscription(subscribe, length);
             return -1;
         }
@@ -551,12 +552,12 @@ static void InitIotHubClient(IOTDM_CLIENT_HANDLE handle, const IOTDM_CLIENT_OPTI
     mqttClientOptions.qualityOfServiceValue = DELIVER_AT_LEAST_ONCE;
 
     handle->mqttClient = initialize_mqtt_client_handle(
-        &mqttClientOptions,
-        handle->endpoint,
-        handle->mqttConnType,
-        OnRecvCallback,
-        IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER,
-        options->retryTimeoutInSeconds < 300 ? 300 : options->retryTimeoutInSeconds);
+            &mqttClientOptions,
+            handle->endpoint,
+            handle->mqttConnType,
+            OnRecvCallback,
+            IOTHUB_CLIENT_RETRY_EXPONENTIAL_BACKOFF_WITH_JITTER,
+            options->retryTimeoutInSeconds < 300 ? 300 : options->retryTimeoutInSeconds);
 }
 
 static void ResetIotDmClient(IOTDM_CLIENT_HANDLE handle)
@@ -688,7 +689,7 @@ int UpdateShadowWithBinary(const IOTDM_CLIENT_HANDLE handle, const char* device,
     return result;
 }
 
-IOTDM_CLIENT_HANDLE iotdm_client_init(char* broker, char* name, bool isGatewayDevice)
+IOTDM_CLIENT_HANDLE iotdm_client_init(char* broker, char* name)
 {
     if (NULL == broker || NULL == name)
     {
@@ -712,8 +713,6 @@ IOTDM_CLIENT_HANDLE iotdm_client_init(char* broker, char* name, bool isGatewayDe
         return NULL;
     }
     handle->name = name;
-
-    handle->isGateway = isGatewayDevice;
 
     return handle;
 }
