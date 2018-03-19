@@ -152,56 +152,6 @@ static char* GenerateTopic(const char* formate, const char* device)
     return topic;
 }
 
-static char* GetBrokerEndpoint(char* broker, MQTT_CONNECTION_TYPE* mqttConnType)
-{
-    if ('t' == broker[0] && 'c' == broker[1] && 'p' == broker[2])
-    {
-        *mqttConnType = MQTT_CONNECTION_TCP;
-    }
-    else if ('s' == broker[0] && 's' == broker[1] && 'l' == broker[2])
-    {
-        *mqttConnType = MQTT_CONNECTION_TLS;
-    }
-    else
-    {
-        LogError("Failure: the prefix of the broker address is incorrect.");
-        return NULL;
-    }
-
-    size_t head = 0;
-    size_t end = 0;
-    for (size_t pos = 0; '\0' != broker[pos]; ++pos)
-    {
-        if (':' == broker[pos])
-        {
-            end = head == 0 ? end : pos;
-            // For head, should skip the substring "//".
-            head = head == 0 ? pos + 3 : head;
-        }
-    }
-    if (head == 0 || end <= head)
-    {
-        LogError("Failure: cannot get the endpoint from broker address.");
-        return NULL;
-    }
-
-    size_t length = end - head + 1;
-    char* endpoint = malloc(sizeof(char) * length);
-    if (NULL == endpoint)
-    {
-        LogError("Failure: cannot init the memory for endpoint.");
-        return NULL;
-    }
-
-    endpoint[length - 1] = '\0';
-    for (size_t pos = 0; pos < length - 1; ++pos)
-    {
-        endpoint[pos] = broker[head + pos];
-    }
-
-    return endpoint;
-}
-
 static const char* GenerateGatewaySubdevicePubObject(const char* gateway, const char* subdevice) {
     STRING_HANDLE stringHandle = STRING_construct_sprintf(GATEWAY_SUBDEVICE_PUB_OBJECT, gateway, subdevice);
     if (stringHandle == NULL) {
@@ -722,7 +672,8 @@ IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* broker, char* name, bool is
     }
 
     ResetIotDmClient(handle);
-    handle->endpoint = GetBrokerEndpoint(broker, &(handle->mqttConnType));
+    handle->endpoint = broker;
+
     if (NULL == handle->endpoint)
     {
         LogError("Failure: get the endpoint from broker address.");
@@ -733,6 +684,8 @@ IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* broker, char* name, bool is
     handle->name = name;
 
     handle->isGateway = isGatewayDevice;
+
+    handle->mqttConnType = MQTT_CONNECTION_MUTUAL_TLS;
 
     return handle;
 }

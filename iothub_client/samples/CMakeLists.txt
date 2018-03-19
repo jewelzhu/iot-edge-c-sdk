@@ -38,10 +38,6 @@ add_subdirectory(iotdm_client_sample)
 
 add_subdirectory(bos_sample)
 
-<<<<<<< HEAD
 add_subdirectory(iot_wechat_client_sample)
 
 add_subdirectory(iot_smarthome_client_sample)
-=======
-add_subdirectory(iot_wechat_client_sample)
->>>>>>> 1e506656ab524f7fc46a61f8855cff7cae446348

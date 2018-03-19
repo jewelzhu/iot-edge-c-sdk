@@ -30,20 +30,16 @@
 #define         SPLIT               "--------------------------------------------------------------------------------------------"
 
 
-// Please set the device client data and security which are shown as follow.
-// The endpoint address your device should cnnect, which is like
-// 1. "tcp://xxxxxx.mqtt.iot.xx.baidubce.com:1883" or
-// 2. "ssl://xxxxxx.mqtt.iot.xx.baidubce.com:1884"
-#define         ADDRESS             "tcp://e6e0474a54554682a1ad7711f2d1dad6.mqtt.iot.bj.baidubce.com:1883"
+// "xxxxxx.mqtt.iot.xx.baidubce.com"
+#define         ADDRESS             "e6e0474a54554682a1ad7711f2d1dad6.mqtt.iot.bj.baidubce.com"
 
-// The device name you created in device management service.
+// $puid
 #define         DEVICE              "_baidu_sample_pump_instance"
 
-// The username you can find on the device connection configuration web,
-// and the format is like "xxxxxx/xxxxx"
+// $endpointName/$puid
 #define         USERNAME            "e6e0474a54554682a1ad7711f2d1dad6/_baidu_sample_pump_instance"
 
-// The key (password) you can find on the device connection configuration web.
+// put smarthome cert in cert.c rather and set PASSWORD to empty
 #define         PASSWORD            "hYOprWCa5EbEls4xRY/9L7/XmukTICcSzFed20CAhwY="
 
 static bool isGateway;
@@ -132,6 +128,10 @@ static void HandleRejected(const SHADOW_MESSAGE_CONTEXT* messageContext, const S
     Log(messageContext->requestId);
     Log("Device:");
     Log(messageContext->device);
+    if (isGateway == true) {
+        Log("SubDevice:");
+        Log(messageContext->subdevice);
+    }
     Log("Code:");
     LogCode(error->code);
     Log("Message:");
@@ -182,7 +182,10 @@ static void HandleUpdateDocuments(const SHADOW_MESSAGE_CONTEXT* messageContext, 
     Log(messageContext->requestId);
     Log("Device:");
     Log(messageContext->device);
-
+    if (isGateway == true) {
+        Log("SubDevice:");
+        Log(messageContext->subdevice);
+    }
     Log("ProfileVersion:");
     LogVersion(documents->profileVersion);
 
@@ -212,7 +215,10 @@ static void HandleUpdateSnapshot(const SHADOW_MESSAGE_CONTEXT* messageContext, c
     Log(messageContext->requestId);
     Log("Device:");
     Log(messageContext->device);
-
+    if (isGateway == true) {
+        Log("SubDevice:");
+        Log(messageContext->subdevice);
+    }
     Log("ProfileVersion:");
     LogVersion(snapshot->profileVersion);
 
@@ -259,7 +265,10 @@ static void HandleDelta(const SHADOW_MESSAGE_CONTEXT* messageContext, const JSON
     Log(messageContext->requestId);
     Log("Device:");
     Log(messageContext->device);
-
+    if (isGateway == true) {
+        Log("SubDevice:");
+        Log(messageContext->subdevice);
+    }
     JSON_Value* value = json_object_get_wrapping_value(desired);
     char* encoded = json_serialize_to_string(value);
     Log("Payload:");
