@@ -1,6 +1,9 @@
 # put all ignore file to here
+<<<<<<< HEAD
 CMakeFiles
 Makefile
+=======
+>>>>>>> 1e506656ab524f7fc46a61f8855cff7cae446348
 *.cmake
 *.o
 .idea

@@ -30,6 +30,7 @@ option(bos "set bos to OFF to skip building for bos client. Default is ON" ON)
 option(iot_wechat "set iot_wechat to OFF to skip building for iot wechat client. Default is ON" ON)
 option(iot_smarthome "set iot_smarthome to OFF to skip building for iot smarthome client. Default is ON" ON)
 
+
 include_directories(../certs)
 
 set(iothub_client_c_files
@@ -73,6 +74,7 @@ if (${iot_wechat})
     set(iothub_client_h_files ${iothub_client_h_files} ../parson/parson.h ./inc/iotdm_client.h ./inc/iotdm_callback.h ./inc/iot_wechat_client.h)
 endif()
 
+<<<<<<< HEAD
 
 if (${iot_smarthome})
     include_directories(../parson)
@@ -80,6 +82,8 @@ if (${iot_smarthome})
     set(iothub_client_h_files ${iothub_client_h_files} ../parson/parson.h ./inc/iot_smarthome_client.h ./inc/iot_smarthome_callback.h)
 endif()
 
+=======
+>>>>>>> 1e506656ab524f7fc46a61f8855cff7cae446348
 include_directories(${AZURE_C_SHARED_UTILITY_INCLUDES})
 include_directories(${SHARED_UTIL_INC_FOLDER})
 include_directories(${MQTT_INC_FOLDER})
