@@ -62,6 +62,21 @@ static void playAudioByUrl(const char* url) {
     LogInfo(url);
 }
 
+
+static char *rand_string(char *str, size_t size)
+{
+    const char charset[] = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJK";
+    if (size) {
+        --size;
+        for (size_t n = 0; n < size; n++) {
+            int key = rand() % (int) (sizeof charset - 1);
+            str[n] = charset[key];
+        }
+        str[size] = '\0';
+    }
+    return str;
+}
+
 int iot_wechat_client_run() {
     if (0 != platform_init())
     {
@@ -85,8 +100,10 @@ int iot_wechat_client_run() {
     }
     LogInfo("init iot wechat client success");
 
+   // char* fileName = "/Users/zhuzhu01/1519658635867.bytes";
+    char* fileName = "/tmp/sample.pcm";
     // read voice message from file and pub to mqtt
-    FILE *fileptr = fopen("/Users/zhuzhu01/1519658635867.bytes", "rb");  // Open the file in binary mode
+    FILE *fileptr = fopen(fileName, "rb");  // Open the file in binary mode
     fseek(fileptr, 0, SEEK_END);          // Jump to the end of the file
     long filelen = ftell(fileptr);             // Get the current byte offset in the file
     rewind(fileptr);                      // Jump back to the beginning of the file
@@ -100,7 +117,8 @@ int iot_wechat_client_run() {
     int i = 0;
     int seq = 0;
     int finish = 0;
-    char* messageId = "MyRandomMessageId";
+    char* messageId = malloc(10);
+    rand_string(messageId, 10);
     LogInfo("Voice length = %d", filelen);
     while (finish == 0) {
         int pieceLength = VOICE_PIECE_SIZE_IN_BYTES;
@@ -116,6 +134,8 @@ int iot_wechat_client_run() {
         i += VOICE_PIECE_SIZE_IN_BYTES;
         seq++;
         LogInfo("publish voice piece to mqtt success, voicePieceLength=%d, seq=%d, isFinish=%d", pieceLength, seq, finish);
+        // TODO 当不加sleep时发送连续10个以上的语音片段时，后续的语音消息将会丢失，why?
+        ThreadAPI_Sleep(10);
     }
 
     // pub a raw mqtt message
