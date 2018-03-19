@@ -22,7 +22,7 @@
 
 int main(void)
 {
-    bool isGatwayDevice = false;
-    iotdm_client_run(isGatwayDevice);
+    bool isGatewayDevice = false;
+    iotdm_client_run(isGatewayDevice);
     return 0;
 }
