@@ -10,6 +10,10 @@ iot_smarthome_client是针对设备管理平台产品、运行于设备端的c�
 
 iot_smarthome_client基于mqtt协议连接到设备管理平台云端。他可以运行于一个普通智能设备，直接pub/sub自己的topic与云端进行通信；也可以运行于一个网关设备，代理多个无法直连云端的本地子设备，网关以代理身份向云端pub子设备的信息，并sub一个通配符topic来监听多个子设备的云端指令。
 
+每个设备会有一组属性，这组属性就是该设备所属产品的参数设置的值，每个属性的值都有两个版本，desired和reported值，desired值为期望值，而reported值为实际值。
+
+举一个简单例子来描述云端是如何和设备端交互以实现控制设备的。一个灯使用int型light_mode来标志亮度，当前的亮度为1（reported和desired都是1），而现在云端希望将该灯的亮度调节为2，则由云端将该设备的light_mode的desired的值改为2，此时设备端会受到这条desired值的变化信息，然后将自身亮度调节为2，完成后上报reported值为2，整个过程完成后灯的亮度被调节为了2，而云端所记录的reported和desired的值也都同步变成了2。能够接受到desired值的变化，是因为设备端通过mqtt从云端sub(订阅)了相关的topic。能够上报新的reported值，是因为设备可以通过mqtt向云端pub(发布）了相应的消息。
+
 ### 1. 准备工作 ###
 设备可以成功连接到云端mqtt的前提条件包括：
 
