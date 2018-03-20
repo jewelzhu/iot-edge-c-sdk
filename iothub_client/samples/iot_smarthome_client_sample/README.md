@@ -6,20 +6,22 @@ iot_smarthome_client是针对设备管理平台产品、运行于设备端的c�
 开放环境配置等相关信息请参考根目录下的统一说明，本文档主要介绍iot_smarthome_client的使用方法。
 
 ## 使用说明 ##
-首先建议阅读和运行iot_smarthome_client_sample下的main.c及iot_smarthome_client_sample.c。该示例代码包含了如何新建一个smarthome_client并连上云端，如何监听并识别来自云端的指令信息，如何向云端发布自身信息等动作。
+
+每个设备会有一组属性，这组属性就是该设备所属产品的参数设置，每一个属性的值都有两个版本，desired和reported值，desired值代表期望值，而reported值代表实际值。
+
+举一个简单例子来描述云端是如何和设备端交互以实现控制设备的。一个灯使用int型light_mode来标志亮度，当前的亮度为1（reported和desired值都是1），而希望通过云端将该灯的亮度调节为2，则由云端将该设备的light_mode的desired的值改为2，此时设备端会受到这条desired值的变化信息，然后将自身亮度调节为2，完成后上报reported值为2，完成后云端所记录的reported和desired的值也都同步变成了2。能够接受到desired值的变化，是因为设备端通过mqtt从云端sub(订阅)了相关的topic。能够上报新的reported值，是因为设备可以通过mqtt向云端pub(发布）了相应的消息。
 
 iot_smarthome_client基于mqtt协议连接到设备管理平台云端。他可以运行于一个普通智能设备，直接pub/sub自己的topic与云端进行通信；也可以运行于一个网关设备，代理多个无法直连云端的本地子设备，网关以代理身份向云端pub子设备的信息，并sub一个通配符topic来监听多个子设备的云端指令。
 
-每个设备会有一组属性，这组属性就是该设备所属产品的参数设置的值，每个属性的值都有两个版本，desired和reported值，desired值为期望值，而reported值为实际值。
+动手开发前建议阅读和运行iot_smarthome_client_sample下的main.c及iot_smarthome_client_sample.c。该示例代码包含了如何新建一个smarthome_client并连上云端，如何监听并识别来自云端的指令信息，如何向云端发布自身信息等动作。
 
-举一个简单例子来描述云端是如何和设备端交互以实现控制设备的。一个灯使用int型light_mode来标志亮度，当前的亮度为1（reported和desired都是1），而现在云端希望将该灯的亮度调节为2，则由云端将该设备的light_mode的desired的值改为2，此时设备端会受到这条desired值的变化信息，然后将自身亮度调节为2，完成后上报reported值为2，整个过程完成后灯的亮度被调节为了2，而云端所记录的reported和desired的值也都同步变成了2。能够接受到desired值的变化，是因为设备端通过mqtt从云端sub(订阅)了相关的topic。能够上报新的reported值，是因为设备可以通过mqtt向云端pub(发布）了相应的消息。
 
 ### 1. 准备工作 ###
 设备可以成功连接到云端mqtt的前提条件包括：
 
 1）设备可以连接公网
 
-2）提供云端地址endpoint
+2）提供厂商endpointName，与厂商百度云账户唯一关联，一个百度云账户只有一个endpointName
 
 3）提供设备唯一16位标志符PUID
 
@@ -81,9 +83,9 @@ static XIO_HANDLE CreateMutualTlsConnection(const char *endpoint)
 ### 3. 创建smarthome_client ###
 完成准备工作以后，即可创建smarthome_client准备与云端连接。
 
-创建client的代码如下，其中ADDRESS为天工云端地址endpoint，例如xxxxxxxxxxxxxxx.mqtt.iot.xx.baidubce.com；DEVICE是设备的PUID；isGatewayDevice是一个布尔值，标志该设备是否为网关。
+创建client的代码如下，其中REGION为选填，合法值为'gz'/'bj'/NULL, 如果为NULL则使用默认值gz；DEVICE是设备的PUID；isGatewayDevice是一个布尔值，标志该设备是否为网关。
 ```
-IOT_SH_CLIENT_HANDLE handle = iot_smarthome_client_init(ADDRESS, DEVICE, isGatewayDevice);
+IOT_SH_CLIENT_HANDLE handle = iot_smarthome_client_init(REGION, DEVICE, isGatewayDevice);
     
 #注册各类回调交口，当云端下发指令时，注册的回调接口将会被调用
 iot_smarthome_client_register_delta(handle, HandleDelta, handle); //设备状态desired值变化时的回调
@@ -145,7 +147,7 @@ static void HandleDelta(const SHADOW_MESSAGE_CONTEXT* messageContext, const JSON
 ```
 
 ### 4. 连接到云端 ###
-DEVICE是设备PUID，USERNAME是endpointName/PUID, endpointName就是endpoint中的第一段信息，即xxxxxxxxxxxxxxx.mqtt.iot.xx.baidubce.com中的xxxxxxxxxxxxxxx。这些信息加上前面步骤中设置的证书，可以成功与云端建立mqtt连接。
+DEVICE是设备PUID，USERNAME是endpointName/PUID。这些信息加上前面步骤中设置的证书，可以成功与云端建立mqtt连接。
 
 ```
 IOT_SH_CLIENT_OPTIONS options;

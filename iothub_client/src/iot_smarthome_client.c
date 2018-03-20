@@ -609,9 +609,15 @@ int UpdateShadowWithBinary(const IOT_SH_CLIENT_HANDLE handle, const char* device
     return result;
 }
 
-IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* broker, char* name, bool isGatewayDevice)
+/**
+ * @param region optional, gz as default
+ * @param name puid
+ * @param isGatewayDevice
+ * @return
+ */
+IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* region, char* name, bool isGatewayDevice)
 {
-    if (NULL == broker || NULL == name)
+    if (NULL == name)
     {
         LogError("Failure: parameters broker and name should not be NULL.");
         return NULL;
@@ -625,7 +631,11 @@ IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* broker, char* name, bool is
     }
 
     ResetIotDmClient(handle);
-    handle->endpoint = broker;
+    if (region == NULL) {
+        region = "gz";
+    }
+
+    handle->endpoint = (char *) STRING_c_str(STRING_construct_sprintf("baidu-smarthome.mqtt.iot.%s.baidubce.com", region));
 
     if (NULL == handle->endpoint)
     {

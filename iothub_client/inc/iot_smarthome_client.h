@@ -51,7 +51,7 @@ typedef struct IOT_SH_CLIENT_OPTIONS_TAG
 
 } IOT_SH_CLIENT_OPTIONS; 
 
-MOCKABLE_FUNCTION(, IOT_SH_CLIENT_HANDLE, iot_smarthome_client_init, char*, broker, char*, name, bool, isGatewayDevice);
+MOCKABLE_FUNCTION(, IOT_SH_CLIENT_HANDLE, iot_smarthome_client_init, char*, region, char*, name, bool, isGatewayDevice);
 MOCKABLE_FUNCTION(, void, iot_smarthome_client_deinit, IOT_SH_CLIENT_HANDLE, handle);
 
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_connect, IOT_SH_CLIENT_HANDLE, handle, const IOT_SH_CLIENT_OPTIONS*, options);

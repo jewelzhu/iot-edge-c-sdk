@@ -31,7 +31,7 @@
 
 
 // "xxxxxx.mqtt.iot.xx.baidubce.com"
-#define         ADDRESS             "e6e0474a54554682a1ad7711f2d1dad6.mqtt.iot.bj.baidubce.com"
+#define         REGION             "bj"
 
 // $puid
 #define         DEVICE              "_baidu_sample_pump_instance"
@@ -297,7 +297,7 @@ int iot_smarthome_client_run(bool isGatewayDevice)
         return __FAILURE__;
     }
 
-    IOT_SH_CLIENT_HANDLE handle = iot_smarthome_client_init(ADDRESS, DEVICE, isGatewayDevice);
+    IOT_SH_CLIENT_HANDLE handle = iot_smarthome_client_init(REGION, DEVICE, isGatewayDevice);
     if (NULL == handle)
     {
         Log("iot_smarthome_client_init failed");
