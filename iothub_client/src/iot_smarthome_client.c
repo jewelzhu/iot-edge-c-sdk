@@ -22,7 +22,7 @@
 #include "iot_smarthome_client.h"
 #include "iothub_mqtt_client.h"
 
-#define     SUB_TOPIC_SIZE                  9
+#define     SUB_TOPIC_SIZE                  7
 
 #define     SLASH                           '/'
 
@@ -35,12 +35,9 @@
 #define     TOPIC_SUFFIX_UPDATE_REJECTED    "update/rejected"
 #define     TOPIC_SUFFIX_UPDATE_DOCUMENTS   "update/documents"
 #define     TOPIC_SUFFIX_UPDATE_SNAPSHOT    "update/snapshot"
-#define     TOPIC_SUFFIX_DELETE_ACCEPTED    "delete/accepted"
-#define     TOPIC_SUFFIX_DELETE_REJECTED    "delete/rejected"
 
 #define     PUB_GET                         "$baidu/iot/shadow/%s/get"
 #define     PUB_UPDATE                      "$baidu/iot/shadow/%s/update"
-#define     PUB_DELETE                      "$baidu/iot/shadow/%s/delete"
 #define     GATEWAY_SUBDEVICE_PUB_OBJECT    "%s/subdevice/%s"
 
 #define     SUB_DELTA                       "$baidu/iot/shadow/%s/delta"
@@ -50,8 +47,6 @@
 #define     SUB_UPDATE_REJECTED             "$baidu/iot/shadow/%s/update/rejected"
 #define     SUB_UPDATE_DOCUMENTS            "$baidu/iot/shadow/%s/update/documents"
 #define     SUB_UPDATE_SNAPSHOT             "$baidu/iot/shadow/%s/update/snapshot"
-#define     SUB_DELETE_ACCEPTED             "$baidu/iot/shadow/%s/delete/accepted"
-#define     SUB_DELETE_REJECTED             "$baidu/iot/shadow/%s/delete/rejected"
 #define     SUB_GATEWAY_WILDCARD            "%s/subdevice/+"
 #define     KEY_CODE                        "code"
 #define     KEY_DESIRED                     "desired"
@@ -72,8 +67,6 @@ typedef struct SHADOW_CALLBACK_TAG
     SHADOW_ACCEPTED_CALLBACK updateAccepted;
     SHADOW_DOCUMENTS_CALLBACK updateDocuments;
     SHADOW_SNAPSHOT_CALLBACK updateSnapshot;
-    SHADOW_ACCEPTED_CALLBACK deleteAccepted;
-    SHADOW_ERROR_CALLBACK deleteRejected;
 } SHADOW_CALLBACK;
 
 typedef struct SHADOW_CALLBACK_CONTEXT_TAG
@@ -85,8 +78,6 @@ typedef struct SHADOW_CALLBACK_CONTEXT_TAG
     void* updateAccepted;
     void* updateDocuments;
     void* updateSnapshot;
-    void* deleteAccepted;
-    void* deleteRejected;
 } SHADOW_CALLBACK_CONTEXT;
 
 typedef struct IOT_SH_CLIENT_TAG
@@ -215,16 +206,6 @@ static int GetDeviceFromTopic(const char* topic, IOT_SH_CLIENT_HANDLE handle, SH
         *type = SHADOW_CALLBACK_TYPE_UPDATE_SNAPSHOT;
         end = tmp - 1;
     }
-    else if (StringCmp(TOPIC_SUFFIX_DELETE_ACCEPTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELETE_ACCEPTED), topicLength + 1))
-    {
-        *type = SHADOW_CALLBACK_TYPE_DELETE_ACCEPTED;
-        end = tmp - 1;
-    }
-    else if (StringCmp(TOPIC_SUFFIX_DELETE_REJECTED, topic, tmp = topicLength - StringLength(TOPIC_SUFFIX_DELETE_REJECTED), topicLength + 1))
-    {
-        *type = SHADOW_CALLBACK_TYPE_DELETE_REJECTED;
-        end = tmp - 1;
-    }
     else
     {
         LogError("Failure: the subscribe handle is not supported.");
@@ -345,22 +326,6 @@ static int GetSubscription(IOT_SH_CLIENT_HANDLE handle, char** subscribe, size_t
         subscribe[index] = GenerateTopic(SUB_UPDATE_SNAPSHOT, subObject);
         if (NULL == subscribe[index++]) {
             LogError("Failure: failed to generate the sub topic 'update/snapshot'.");
-            ReleaseSubscription(subscribe, length);
-            return -1;
-        }
-    }
-    if (NULL != handle->callback.deleteAccepted) {
-        subscribe[index] = GenerateTopic(SUB_DELETE_ACCEPTED, subObject);
-        if (NULL == subscribe[index++]) {
-            LogError("Failure: failed to generate the sub topic 'delete/accepted'.");
-            ReleaseSubscription(subscribe, length);
-            return -1;
-        }
-    }
-    if (NULL != handle->callback.deleteRejected) {
-        subscribe[index] = GenerateTopic(SUB_DELETE_REJECTED, subObject);
-        if (NULL == subscribe[index++]) {
-            LogError("Failure: failed to generate the sub topic 'delete/rejected'.");
             ReleaseSubscription(subscribe, length);
             return -1;
         }
@@ -489,14 +454,6 @@ static void OnRecvCallback(MQTT_MESSAGE_HANDLE msgHandle, void* context)
                 OnRecvCallbackForSnapshot(handle, &msgContext, root);
                 break;
 
-            case SHADOW_CALLBACK_TYPE_DELETE_ACCEPTED:
-                OnRecvCallbackForAccepted(&msgContext, root, handle->callback.deleteAccepted, handle->context.deleteAccepted);
-                break;
-
-            case SHADOW_CALLBACK_TYPE_DELETE_REJECTED:
-                OnRecvCallbackForError(&msgContext, root, handle->callback.deleteRejected, handle->context.deleteRejected);
-                break;
-
             default:
                 LogError("Failure: the shadow callback type is not supported.");
         }
@@ -544,8 +501,6 @@ static void ResetIotDmClient(IOT_SH_CLIENT_HANDLE handle)
         handle->callback.updateRejected = NULL;
         handle->callback.updateDocuments = NULL;
         handle->callback.updateSnapshot = NULL;
-        handle->callback.deleteAccepted = NULL;
-        handle->callback.deleteRejected = NULL;
 
         handle->context.delta = NULL;
         handle->context.getAccepted = NULL;
@@ -554,8 +509,6 @@ static void ResetIotDmClient(IOT_SH_CLIENT_HANDLE handle)
         handle->context.updateRejected = NULL;
         handle->context.updateSnapshot = NULL;
         handle->context.updateDocuments = NULL;
-        handle->context.deleteAccepted = NULL;
-        handle->context.deleteRejected = NULL;
     }
 }
 
@@ -843,18 +796,6 @@ void iot_smarthome_client_register_update_snapshot(IOT_SH_CLIENT_HANDLE handle, 
     handle->context.updateSnapshot = callbackContext;
 }
 
-void iot_smarthome_client_register_delete_accepted(IOT_SH_CLIENT_HANDLE handle, SHADOW_ACCEPTED_CALLBACK callback, void* callbackContext)
-{
-    handle->callback.deleteAccepted = callback;
-    handle->context.deleteAccepted = callbackContext;
-}
-
-void iot_smarthome_client_register_delete_rejected(IOT_SH_CLIENT_HANDLE handle, SHADOW_ERROR_CALLBACK callback, void* callbackContext)
-{
-    handle->callback.deleteRejected = callback;
-    handle->context.deleteRejected = callbackContext;
-}
-
 int iot_smarthome_client_get_shadow(const IOT_SH_CLIENT_HANDLE handle, const char* device, const char* requestId)
 {
     if (NULL == requestId)
@@ -873,26 +814,6 @@ int iot_smarthome_client_get_shadow(const IOT_SH_CLIENT_HANDLE handle, const cha
 int iot_smarthome_client_get_subdevice_shadow(const IOT_SH_CLIENT_HANDLE handle, const char* gateway, const char* subdevice, const char* requestId)
 {
     return iot_smarthome_client_get_shadow(handle, GenerateGatewaySubdevicePubObject(gateway, subdevice), requestId);
-}
-
-int iot_smarthome_client_delete_shadow(const IOT_SH_CLIENT_HANDLE handle, const char* device, const char* requestId)
-{
-    if (NULL == requestId)
-    {
-        LogError("Failure: request id should not be NULL.");
-        return __FAILURE__;
-    }
-
-    JSON_Value* request = json_value_init_object();
-    JSON_Object* root = json_object(request);
-    json_object_set_string(root, KEY_REQUEST_ID, requestId);
-    char* topic = GenerateTopic(PUB_DELETE, device);
-    return SendRequest(handle, topic, request);
-}
-
-int iot_smarthome_client_delete_subdevice_shadow(const IOT_SH_CLIENT_HANDLE handle, const char* gateway, const char* subdevice, const char* requestId)
-{
-    return iot_smarthome_client_delete_shadow(handle, GenerateGatewaySubdevicePubObject(gateway, subdevice), requestId);
 }
 
 int iot_smarthome_client_update_desired(const IOT_SH_CLIENT_HANDLE handle, const char* device, const char* requestId, uint32_t version, JSON_Value* desired, JSON_Value* lastUpdatedTime)

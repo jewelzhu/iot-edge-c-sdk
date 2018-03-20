@@ -63,11 +63,8 @@ MOCKABLE_FUNCTION(, void, iot_smarthome_client_register_update_accepted, IOT_SH_
 MOCKABLE_FUNCTION(, void, iot_smarthome_client_register_update_rejected, IOT_SH_CLIENT_HANDLE, handle, SHADOW_ERROR_CALLBACK, callback, void*, callbackContext);
 MOCKABLE_FUNCTION(, void, iot_smarthome_client_register_update_documents, IOT_SH_CLIENT_HANDLE, handle, SHADOW_DOCUMENTS_CALLBACK, callback, void*, callbackContext);
 MOCKABLE_FUNCTION(, void, iot_smarthome_client_register_update_snapshot, IOT_SH_CLIENT_HANDLE, handle, SHADOW_SNAPSHOT_CALLBACK, callback, void*, callbackContext);
-MOCKABLE_FUNCTION(, void, iot_smarthome_client_register_delete_accepted, IOT_SH_CLIENT_HANDLE, handle, SHADOW_ACCEPTED_CALLBACK, callback, void*, callbackContext);
-MOCKABLE_FUNCTION(, void, iot_smarthome_client_register_delete_rejected, IOT_SH_CLIENT_HANDLE, handle, SHADOW_ERROR_CALLBACK, callback, void*, callbackContext);
 
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_get_shadow, const IOT_SH_CLIENT_HANDLE, handle, const char*, device, const char*, requestId);
-MOCKABLE_FUNCTION(, int, iot_smarthome_client_delete_shadow, const IOT_SH_CLIENT_HANDLE, handle, const char*, device, const char*, requestId);
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_desired, const IOT_SH_CLIENT_HANDLE, handle, const char*, device, const char*, requestId, uint32_t, version, JSON_Value*, desired, JSON_Value*, lastUpdatedTime);
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_shadow, const IOT_SH_CLIENT_HANDLE, handle, const char*, device, const char*, requestId, uint32_t, version, JSON_Value*, reported, JSON_Value*, lastUpdatedTime);
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_desired_with_binary, const IOT_SH_CLIENT_HANDLE, handle, const char*, device, const char*, requestId, uint32_t, version, const char*, desired, const char*, lastUpdatedTime);
@@ -75,7 +72,6 @@ MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_shadow_with_binary, const I
 
 // Pub actions for gateway on behalf on subdevices
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_get_subdevice_shadow, const IOT_SH_CLIENT_HANDLE, handle, const char*, gateway, const char*, subdevice, const char*, requestId);
-MOCKABLE_FUNCTION(, int, iot_smarthome_client_delete_subdevice_shadow, const IOT_SH_CLIENT_HANDLE, handle, const char*, gateway, const char*, subdevice, const char*, requestId);
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_subdevice_desired, const IOT_SH_CLIENT_HANDLE, handle, const char*, gateway, const char*, subdevice, const char*, requestId, uint32_t, version, JSON_Value*, desired, JSON_Value*, lastUpdatedTime);
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_subdevice_shadow, const IOT_SH_CLIENT_HANDLE, handle, const char*, gateway, const char*, subdevice, const char*, requestId, uint32_t, version, JSON_Value*, reported, JSON_Value*, lastUpdatedTime);
 MOCKABLE_FUNCTION(, int, iot_smarthome_client_update_subdevice_desired_with_binary, const IOT_SH_CLIENT_HANDLE, handle, const char*, gateway, const char*, subdevice, const char*, requestId, uint32_t, version, const char*, desired, const char*, lastUpdatedTime);

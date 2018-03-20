@@ -241,23 +241,6 @@ static void HandleUpdateSnapshot(const SHADOW_MESSAGE_CONTEXT* messageContext, c
     Log(SPLIT);
 }
 
-static void HandleDeleteAccepted(const SHADOW_MESSAGE_CONTEXT* messageContext, const SHADOW_ACCEPTED* accepted, void* callbackContext)
-{
-    Log("Received a message for shadow delete accepted.");
-    HandleAccepted(messageContext, accepted, callbackContext);
-
-    Log(SPLIT);
-}
-
-static void HandleDeleteRejected(const SHADOW_MESSAGE_CONTEXT* messageContext, const SHADOW_ERROR* error, void* callbackContext)
-{
-    Log("Received a message for shadow delete rejected.");
-    HandleRejected(messageContext, error, callbackContext);
-
-    Log(SPLIT);
-}
-
-
 static void HandleDelta(const SHADOW_MESSAGE_CONTEXT* messageContext, const JSON_Object* desired, void* callbackContext)
 {
     Log("Received a message for shadow delta");
@@ -328,8 +311,6 @@ int iot_smarthome_client_run(bool isGatewayDevice)
     iot_smarthome_client_register_update_rejected(handle, HandleUpdateRejected, handle);
     iot_smarthome_client_register_update_documents(handle, HandleUpdateDocuments, handle);
     iot_smarthome_client_register_update_snapshot(handle, HandleUpdateSnapshot, handle);
-    iot_smarthome_client_register_delete_accepted(handle, HandleDeleteAccepted, handle);
-    iot_smarthome_client_register_delete_rejected(handle, HandleDeleteRejected, handle);
 
     IOT_SH_CLIENT_OPTIONS options;
     options.cleanSession = true;
@@ -410,16 +391,6 @@ int iot_smarthome_client_run(bool isGatewayDevice)
     }
 
     DESTROY_MODEL_INSTANCE(pump);
-
-    // Sample: delete the shadow
-    if (0 == iot_smarthome_client_delete_shadow(handle, DEVICE, "222222"))
-    {
-        Log("Succeeded to get device shadow");
-    }
-    else
-    {
-        Log("Failed to get device shadow");
-    }
 
     // Sample: subscribe the delta topic and update shadow with desired value.
     while (iot_smarthome_client_dowork(handle) >= 0)
