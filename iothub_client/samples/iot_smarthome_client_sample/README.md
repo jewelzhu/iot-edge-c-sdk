@@ -80,12 +80,12 @@ static XIO_HANDLE CreateMutualTlsConnection(const char *endpoint)
 ```
 
 
-### 3. 创建smarthome_client ###
+### 3. 定义一个smarthome_client ###
 完成准备工作以后，即可创建smarthome_client准备与云端连接。
 
-创建client的代码如下，其中REGION为选填，合法值为'gz'/'bj'/NULL, 如果为NULL则使用默认值gz；DEVICE是设备的PUID；isGatewayDevice是一个布尔值，标志该设备是否为网关。
+创建client的代码如下，isGatewayDevice是一个布尔值，标志该设备是否为网关。
 ```
-IOT_SH_CLIENT_HANDLE handle = iot_smarthome_client_init(REGION, DEVICE, isGatewayDevice);
+IOT_SH_CLIENT_HANDLE handle = iot_smarthome_client_init(isGatewayDevice);
     
 #注册各类回调交口，当云端下发指令时，注册的回调接口将会被调用
 iot_smarthome_client_register_delta(handle, HandleDelta, handle); //设备状态desired值变化时的回调
@@ -152,7 +152,7 @@ DEVICE是设备PUID，USERNAME是endpointName/PUID。这些信息加上前面步
 ```
 IOT_SH_CLIENT_OPTIONS options;
 options.cleanSession = true;
-options.clientId = DEVICE;  // your PUID
+options.clientId = DEVICE;  // your $PUID
 options.username = USERNAME;  // $endpointName/$PUID
 options.keepAliveInterval = 5;
 options.retryTimeoutInSeconds = 300;

@@ -58,6 +58,8 @@
 #define     KEY_CURRENT                     "current"
 #define     KEY_PREVIOUS                    "previous"
 
+#define     ENDPOINT                        "baidu-smarthome.mqtt.iot.gz.baidubce.com"
+
 typedef struct SHADOW_CALLBACK_TAG
 {
     SHADOW_DELTA_CALLBACK delta;
@@ -609,20 +611,8 @@ int UpdateShadowWithBinary(const IOT_SH_CLIENT_HANDLE handle, const char* device
     return result;
 }
 
-/**
- * @param region optional, gz as default
- * @param name puid
- * @param isGatewayDevice
- * @return
- */
-IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* region, char* name, bool isGatewayDevice)
+IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(bool isGatewayDevice)
 {
-    if (NULL == name)
-    {
-        LogError("Failure: parameters broker and name should not be NULL.");
-        return NULL;
-    }
-
     IOT_SH_CLIENT_HANDLE handle = malloc(sizeof(IOT_SH_CLIENT));
     if (NULL == handle)
     {
@@ -631,20 +621,8 @@ IOT_SH_CLIENT_HANDLE iot_smarthome_client_init(char* region, char* name, bool is
     }
 
     ResetIotDmClient(handle);
-    if (region == NULL) {
-        region = "gz";
-    }
 
-    handle->endpoint = (char *) STRING_c_str(STRING_construct_sprintf("baidu-smarthome.mqtt.iot.%s.baidubce.com", region));
-
-    if (NULL == handle->endpoint)
-    {
-        LogError("Failure: get the endpoint from broker address.");
-        free(handle);
-        return NULL;
-    }
-
-    handle->name = name;
+    handle->endpoint = ENDPOINT;
 
     handle->isGateway = isGatewayDevice;
 
@@ -700,6 +678,8 @@ int iot_smarthome_client_connect(IOT_SH_CLIENT_HANDLE handle, const IOT_SH_CLIEN
         LogError("Failure: the username and password in options should not be NULL.");
         return __FAILURE__;
     }
+
+    handle->name = options->clientId;
 
     InitIotHubClient(handle, options);
     if (NULL == handle->mqttClient)
