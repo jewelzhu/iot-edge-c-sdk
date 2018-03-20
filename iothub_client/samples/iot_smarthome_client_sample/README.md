@@ -1,16 +1,16 @@
-#设备管理平台设备端sdk使用文档
+#设备管理平台设备端sdk使用文档#
 
-##简介
+##简介##
 iot_smarthome_client是针对设备管理平台产品、运行于设备端的c语言sdk，适用于可直连设备管理平台云端的普通智能设备或者智能网关设备。建议用户在此sdk基础上进行二次开发满足自身需求。
 
 开放环境配置等相关信息请参考根目录下的统一说明，本文档主要介绍iot_smarthome_client的使用方法。
 
-##使用说明
+##使用说明##
 首先建议阅读和运行iot_smarthome_client_sample下的main.c及iot_smarthome_client_sample.c。该示例代码包含了如何新建一个smarthome_client并连上云端，如何监听并识别来自云端的指令信息，如何向云端发布自身信息等动作。
 
 iot_smarthome_client基于mqtt协议连接到设备管理平台云端。他可以运行于一个普通智能设备，直接pub/sub自己的topic与云端进行通信；也可以运行于一个网关设备，代理多个无法直连云端的本地子设备，网关以代理身份向云端pub子设备的信息，并sub一个通配符topic来监听多个子设备的云端指令。
 
-###1. 准备工作
+###1. 准备工作###
 设备可以成功连接到云端mqtt的前提条件包括：
 
 1）设备可以连接公网
@@ -27,7 +27,7 @@ iot_smarthome_client基于mqtt协议连接到设备管理平台云端。他可�
 
 如果是网关代理子设备的场景，需要先激活网关，然后再使用子设备信息+已激活网关的信息去激活子设备后，网关方可启用对该子设备的代理功能。网关本身的激活同普通设备的激活。
 
-###2. 提供证书
+###2. 提供证书###
 请在certs/certs.c中填入设备对应的证书。注意由于网关子设备没有运行本sdk直连云端的能力，因此网关子设备没有也不需要证书。
 ```
 
@@ -74,7 +74,7 @@ static XIO_HANDLE CreateMutualTlsConnection(const char *endpoint)
 ```
 
 
-###3. 创建smarthome_client
+###3. 创建smarthome_client###
 完成准备工作以后，即可创建smarthome_client准备与云端连接。
 创建client的代码如下，其中ADDRESS为天工云端地址endpoint，例如xxxxxxxxxxxxxxx.mqtt.iot.xx.baidubce.com；DEVICE是设备的PUID；isGatewayDevice是一个布尔值，标志该设备是否为网关。
 ```
@@ -139,7 +139,7 @@ static void HandleDelta(const SHADOW_MESSAGE_CONTEXT* messageContext, const JSON
 }
 ```
 
-###4. 连接到云端
+###4. 连接到云端###
 DEVICE是设备PUID，USERNAME是endpointName/PUID, endpointName就是endpoint中的第一段信息，即xxxxxxxxxxxxxxx.mqtt.iot.xx.baidubce.com中的xxxxxxxxxxxxxxx。这些信息加上前面步骤中设置的证书，可以成功与云端建立mqtt连接。
 
 ```
@@ -153,7 +153,7 @@ options.retryTimeoutInSeconds = 300;
 iot_smarthome_client_connect(handle, &options);
 ```
 
-###5. 监听云端指令
+###5. 监听云端指令###
 创建一个循环始终监听云端指令，当有信息下发时，步骤3中注册的相应回调函数将会被触发。
 ```
 while (iot_smarthome_client_dowork(handle) >= 0)
@@ -162,7 +162,7 @@ while (iot_smarthome_client_dowork(handle) >= 0)
 }
 ```
 
-###6. 向云端发布信息
+###6. 向云端发布信息###
 普通设备（包括网关设备发布自身信息而非代理子设备被信息的场景）向云端发布信息可使用如下接口：
 ```
 // 获取设备云端状态信息
