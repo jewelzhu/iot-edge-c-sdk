@@ -21,10 +21,7 @@
 #include <iot_wechat_client.h>
 #include <azure_c_shared_utility/xlogging.h>
 #include <azure_c_shared_utility/threadapi.h>
-#include <stdlib.h>
 #include <iothub_mqtt_client.h>
-#include <azure_c_shared_utility/utf8_checker.h>
-#include <mach/boolean.h>
 #include <azure_c_shared_utility/buffer_.h>
 
 typedef struct IOT_WECHAT_CLIENT_TAG
